@@ -3,12 +3,20 @@ mod audio;
 mod loading;
 mod menu;
 mod player;
+mod lighting;
+mod camera;
+mod map;
+mod ui;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
 use crate::loading::LoadingPlugin;
 use crate::menu::MenuPlugin;
 use crate::player::PlayerPlugin;
+use crate::map::MapPlugin;
+use crate::camera::CameraPlugin;
+use crate::ui::UiPlugin;
+use crate::lighting::LightingPlugin;
 
 use bevy::app::App;
 #[cfg(debug_assertions)]
@@ -34,11 +42,15 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
+            .add_plugin(LightingPlugin)
+            .add_plugin(UiPlugin)
             .add_plugin(LoadingPlugin)
+            .add_plugin(MapPlugin)
+            .add_plugin(CameraPlugin)
             .add_plugin(MenuPlugin)
             .add_plugin(ActionsPlugin)
-            .add_plugin(InternalAudioPlugin)
-            .add_plugin(PlayerPlugin);
+            .add_plugin(InternalAudioPlugin);
+            // .add_plugin(PlayerPlugin);
 
         #[cfg(debug_assertions)]
         {
