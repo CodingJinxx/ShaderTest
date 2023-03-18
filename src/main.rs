@@ -8,6 +8,7 @@ use bevy::DefaultPlugins;
 use bevy_game::GamePlugin;
 use std::io::Cursor;
 use winit::window::Icon;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     App::new()
@@ -22,6 +23,7 @@ fn main() {
             }),
             ..default()
         }))
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(GamePlugin)
         .add_system(set_window_icon.on_startup())
         .run();

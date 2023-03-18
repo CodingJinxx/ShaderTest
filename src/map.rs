@@ -7,8 +7,7 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_map.in_schedule(OnEnter(GameState::Playing)))
-        .add_plugin(ShapePlugin);
+        app.add_system(setup_map.in_schedule(OnEnter(GameState::Playing)));
     }
 }
 
@@ -18,4 +17,8 @@ fn setup_map(mut commands: Commands, textures: Res<TextureAssets>) {
         transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
         ..Default::default()
     });
+}
+
+fn handle_input(mut commands: Commands) {
+    
 }

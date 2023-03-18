@@ -1,300 +1,158 @@
-use bevy::{prelude::*, a11y::{AccessibilityNode, accesskit::{Role, NodeBuilder}}, input::mouse::{MouseWheel, MouseScrollUnit}};
+use bevy::{prelude::*, a11y::{AccessibilityNode, accesskit::{Role, NodeBuilder}}, input::mouse::{MouseWheel, MouseScrollUnit}, reflect::erased_serde::__private::serde::__private::de};
 
-use crate::{loading::FontAssets, GameState};
+use crate::{loading::FontAssets, GameState, actions::Actions, actions::Tool};
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
        app.add_system(setup_ui.in_schedule(OnEnter(GameState::Playing)))
-       .add_system(mouse_scroll.in_set(OnUpdate(GameState::Playing)));
+       .add_system(update_debug_control_text.in_set(OnUpdate(GameState::Playing)))
+       .add_system(handle_tool_buttons.in_set(OnUpdate(GameState::Playing)));
     }
+}
+
+#[derive(Component)]
+pub enum ButtonType {
+    Select,
+    PlaceWall,
+    PlaceLight,
+    Delete
 }
 
 fn setup_ui(mut commands: Commands, font_assets: Res<FontAssets>) {
 
-    // root node
-    commands
-        .spawn(NodeBundle {
+    commands.spawn(NodeBundle {
+        style: Style {
+            size: Size::width(Val::Percent(100.)),
+            justify_content: JustifyContent::SpaceBetween,
+            align_items: AlignItems::FlexEnd,
+            ..default()
+        },
+        ..default()
+    }).with_children(|parent| {
+        parent.spawn(NodeBundle {
             style: Style {
-                size: Size::width(Val::Percent(100.0)),
+                size: Size::width(Val::Percent(100.)),
                 justify_content: JustifyContent::SpaceBetween,
+                align_items: AlignItems::FlexEnd,
                 ..default()
             },
             ..default()
-        })
-        .with_children(|parent| {
-            // left vertical fill (border)
-            parent
-                .spawn(NodeBundle {
-                    style: Style {
-                        size: Size::width(Val::Px(200.0)),
-                        border: UiRect::all(Val::Px(2.0)),
-                        ..default()
-                    },
-                    background_color: Color::rgb(0.65, 0.65, 0.65).into(),
+        }).with_children(|button_par| {
+            button_par.spawn((ButtonBundle {
+                style: Style {
+                    size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
                     ..default()
-                })
-                .with_children(|parent| {
-                    // left vertical fill (content)
-                    parent
-                        .spawn(NodeBundle {
-                            style: Style {
-                                size: Size::width(Val::Percent(100.0)),
-                                ..default()
-                            },
-                            background_color: Color::rgb(0.15, 0.15, 0.15).into(),
-                            ..default()
-                        })
-                        .with_children(|parent| {
-                            // text
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    "Text Example",
-                                    TextStyle {
-                                        font: font_assets.fira_sans.clone(),
-                                        font_size: 30.0,
-                                        color: Color::WHITE,
-                                    },
-                                )
-                                .with_style(Style {
-                                    margin: UiRect::all(Val::Px(5.0)),
-                                    ..default()
-                                }),
-                                // Because this is a distinct label widget and
-                                // not button/list item text, this is necessary
-                                // for accessibility to treat the text accordingly.
-                                Label,
-                            ));
-                        });
-                });
-            // right vertical fill
-            parent
-                .spawn(NodeBundle {
-                    style: Style {
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        size: Size::width(Val::Px(200.0)),
-                        ..default()
-                    },
-                    background_color: Color::rgb(0.15, 0.15, 0.15).into(),
+                },
+                background_color: BackgroundColor(Color::BLACK),
+                ..default()
+            },ButtonType::Select)).with_children(|buttons| {
+                buttons.spawn(TextBundle::from_section("Select", TextStyle { font: font_assets.fira_sans.clone(), font_size: 12.0, color: Color::WHITE }));
+            });
+
+            button_par.spawn((ButtonBundle {
+                style: Style {
+                    size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
                     ..default()
-                })
-                .with_children(|parent| {
-                    // Title
-                    parent.spawn((
-                        TextBundle::from_section(
-                            "Scrolling list",
-                            TextStyle {
-                                font: font_assets.fira_sans.clone(),
-                                font_size: 25.,
-                                color: Color::WHITE,
-                            },
-                        )
-                        .with_style(Style {
-                            size: Size::height(Val::Px(25.)),
-                            ..default()
-                        }),
-                        Label,
-                    ));
-                    // List with hidden overflow
-                    parent
-                        .spawn(NodeBundle {
-                            style: Style {
-                                flex_direction: FlexDirection::Column,
-                                align_self: AlignSelf::Stretch,
-                                size: Size::height(Val::Percent(50.0)),
-                                overflow: Overflow::Hidden,
-                                ..default()
-                            },
-                            background_color: Color::rgb(0.10, 0.10, 0.10).into(),
-                            ..default()
-                        })
-                        .with_children(|parent| {
-                            // Moving panel
-                            parent
-                                .spawn((
-                                    NodeBundle {
-                                        style: Style {
-                                            flex_direction: FlexDirection::Column,
-                                            flex_grow: 1.0,
-                                            max_size: Size::UNDEFINED,
-                                            align_items: AlignItems::Center,
-                                            ..default()
-                                        },
-                                        ..default()
-                                    },
-                                    ScrollingList::default(),
-                                    AccessibilityNode(NodeBuilder::new(Role::List)),
-                                ))
-                                .with_children(|parent| {
-                                    // List items
-                                    for i in 0..30 {
-                                        parent.spawn((
-                                            TextBundle::from_section(
-                                                format!("Item {i}"),
-                                                TextStyle {
-                                                    font: font_assets.fira_sans.clone(),
-                                                    font_size: 20.,
-                                                    color: Color::WHITE,
-                                                },
-                                            )
-                                            .with_style(Style {
-                                                flex_shrink: 0.,
-                                                size: Size::new(Val::Undefined, Val::Px(20.)),
-                                                ..default()
-                                            }),
-                                            Label,
-                                            AccessibilityNode(NodeBuilder::new(Role::ListItem)),
-                                        ));
-                                    }
-                                });
-                        });
-                });
-            parent
-                .spawn(NodeBundle {
-                    style: Style {
-                        size: Size::new(Val::Px(200.0), Val::Px(200.0)),
-                        position_type: PositionType::Absolute,
-                        position: UiRect {
-                            left: Val::Px(210.0),
-                            bottom: Val::Px(10.0),
-                            ..default()
-                        },
-                        border: UiRect::all(Val::Px(20.0)),
-                        ..default()
-                    },
-                    background_color: Color::rgb(0.4, 0.4, 1.0).into(),
+                },
+                background_color: BackgroundColor(Color::BLACK),
+                ..default()
+            },ButtonType::PlaceWall)).with_children(|buttons| {
+                buttons.spawn(TextBundle::from_section("Place Wall", TextStyle { font: font_assets.fira_sans.clone(), font_size: 12.0, color: Color::WHITE }));
+            });
+
+            button_par.spawn((ButtonBundle {
+                style: Style {
+                    size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
                     ..default()
-                })
-                .with_children(|parent| {
-                    parent.spawn(NodeBundle {
-                        style: Style {
-                            size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                            ..default()
-                        },
-                        background_color: Color::rgb(0.8, 0.8, 1.0).into(),
-                        ..default()
-                    });
-                });
-            // render order test: reddest in the back, whitest in the front (flex center)
-            parent
-                .spawn(NodeBundle {
-                    style: Style {
-                        size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                        position_type: PositionType::Absolute,
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
-                        ..default()
-                    },
+                },
+                background_color: BackgroundColor(Color::BLACK),
+                ..default()
+            },ButtonType::PlaceLight)).with_children(|buttons| {
+                buttons.spawn(TextBundle::from_section("Place Light", TextStyle { font: font_assets.fira_sans.clone(), font_size: 12.0, color: Color::WHITE }));
+            });
+
+            button_par.spawn((ButtonBundle {
+                style: Style {
+                    size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
                     ..default()
-                })
-                .with_children(|parent| {
-                    parent
-                        .spawn(NodeBundle {
-                            style: Style {
-                                size: Size::new(Val::Px(100.0), Val::Px(100.0)),
-                                ..default()
-                            },
-                            background_color: Color::rgb(1.0, 0.0, 0.0).into(),
-                            ..default()
-                        })
-                        .with_children(|parent| {
-                            parent.spawn(NodeBundle {
-                                style: Style {
-                                    // Take the size of the parent node.
-                                    size: Size::all(Val::Percent(100.)),
-                                    position_type: PositionType::Absolute,
-                                    position: UiRect {
-                                        left: Val::Px(20.0),
-                                        bottom: Val::Px(20.0),
-                                        ..default()
-                                    },
-                                    ..default()
-                                },
-                                background_color: Color::rgb(1.0, 0.3, 0.3).into(),
-                                ..default()
-                            });
-                            parent.spawn(NodeBundle {
-                                style: Style {
-                                    size: Size::all(Val::Percent(100.)),
-                                    position_type: PositionType::Absolute,
-                                    position: UiRect {
-                                        left: Val::Px(40.0),
-                                        bottom: Val::Px(40.0),
-                                        ..default()
-                                    },
-                                    ..default()
-                                },
-                                background_color: Color::rgb(1.0, 0.5, 0.5).into(),
-                                ..default()
-                            });
-                            parent.spawn(NodeBundle {
-                                style: Style {
-                                    size: Size::all(Val::Percent(100.)),
-                                    position_type: PositionType::Absolute,
-                                    position: UiRect {
-                                        left: Val::Px(60.0),
-                                        bottom: Val::Px(60.0),
-                                        ..default()
-                                    },
-                                    ..default()
-                                },
-                                background_color: Color::rgb(1.0, 0.7, 0.7).into(),
-                                ..default()
-                            });
-                            // alpha test
-                            parent.spawn(NodeBundle {
-                                style: Style {
-                                    size: Size::all(Val::Percent(100.)),
-                                    position_type: PositionType::Absolute,
-                                    position: UiRect {
-                                        left: Val::Px(80.0),
-                                        bottom: Val::Px(80.0),
-                                        ..default()
-                                    },
-                                    ..default()
-                                },
-                                background_color: Color::rgba(1.0, 0.9, 0.9, 0.4).into(),
-                                ..default()
-                            });
-                        });
-                });
-            // bevy logo (flex center)
-            parent
-                .spawn(NodeBundle {
-                    style: Style {
-                        size: Size::width(Val::Percent(100.)),
-                        position_type: PositionType::Absolute,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::FlexStart,
-                        ..default()
-                    },
-                    ..default()
-                })
-                .with_children(|parent| {
-                    // bevy logo (image)
-                    parent
-                        .spawn(ImageBundle {
-                            style: Style {
-                                size: Size::width(Val::Px(500.0)),
-                                ..default()
-                            },
-                            ..default()
-                        })
-                        .with_children(|parent| {
-                            // alt text
-                            parent
-                                .spawn(TextBundle::from_section("Bevy logo", TextStyle::default()));
-                        });
-                });
+                },
+                background_color: BackgroundColor(Color::BLACK),
+                ..default()
+            }, ButtonType::Delete)).with_children(|buttons| {
+                buttons.spawn(TextBundle::from_section("Delete", TextStyle { font: font_assets.fira_sans.clone(), font_size: 12.0, color: Color::WHITE }));
+            });
         });
+
+        parent.spawn((TextBundle::from_sections([
+            TextSection::new("", TextStyle { font: font_assets.fira_sans.clone(), font_size: 20.0, color: Color::WHITE })
+        ]), DebugControlsText));
+    });
+          
 }
 
 #[derive(Component, Default)]
 struct ScrollingList {
     position: f32,
+}
+
+#[derive(Component, Default)]
+struct DebugControlsText;
+
+fn update_debug_control_text(mut debug_text: Query<&mut Text, With<DebugControlsText>>, actions: Res<Actions>) {
+    let mut text = debug_text.single_mut();
+    text.sections[0].value = format!("Clicked?: {:?},Current Tool: {:?}, Cursor X: {:.2}, Y: {:.2}, World Pos Cursor X: {:.2}, Y: {:.2}", actions.left_click,actions.current_tool().as_ref().unwrap_or(&Tool::None), actions.cursor_position_raw.unwrap_or(Vec2::ZERO).x, actions.cursor_position_raw.unwrap_or(Vec2::ZERO).y, actions.world_cursor_position.unwrap_or(Vec2::ZERO).x, actions.world_cursor_position.unwrap_or(Vec2::ZERO).y)
+}
+
+fn handle_tool_buttons(mut interaction_query: Query<(&Interaction, &ButtonType),(Changed<Interaction>, With<Button>)>, mut actions: ResMut<Actions>) {
+    let mut just_set_ui_clicked = false;
+    for interaction in interaction_query.iter() {
+        match interaction.1 {
+            ButtonType::Select => {
+                if let Interaction::Clicked = interaction.0 {
+                    actions.update_tool(Tool::Select);
+                }
+            },
+            ButtonType::PlaceWall => {
+                if let Interaction::Clicked = interaction.0 {
+                    actions.update_tool(Tool::BuildWall);
+
+                }
+            },
+            ButtonType::PlaceLight => {
+                if let Interaction::Clicked = interaction.0 {
+                    actions.update_tool(Tool::PlaceLight);
+                }
+            },
+            ButtonType::Delete => {
+                if let Interaction::Clicked = interaction.0 {
+                    actions.update_tool(Tool::Delete);
+                }
+            }
+        }
+        actions.ui_just_clicked = true;
+        just_set_ui_clicked = true;
+    }
+    if(just_set_ui_clicked == false) {
+        actions.ui_just_clicked = false;
+    }
 }
 
 fn mouse_scroll(
