@@ -114,16 +114,16 @@ fn prepare_light_material(
             
                 let mut i = 0;
                 for (light_source) in light_sources.iter_mut() {
-                    // let position_3d = Vec3::new(light_source.position.x * cam_proj.scale, light_source.position.y * cam_proj.scale  , 0.0);
-                    // let projection = Mat4::orthographic_rh(
-                    //     cam_proj.area.min.x, 
-                    //     cam_proj.area.max.x, 
-                    //     cam_proj.area.min.y, 
-                    //     cam_proj.area.max.y, 
-                    //     cam_proj.far, 
-                    //     cam_proj.near);
+                    let position_3d = Vec3::new(light_source.position.x * cam_proj.scale, light_source.position.y * cam_proj.scale  , 0.0);
+                    let projection = Mat4::orthographic_rh(
+                        cam_proj.area.min.x, 
+                        cam_proj.area.max.x, 
+                        cam_proj.area.min.y, 
+                        cam_proj.area.max.y, 
+                        cam_proj.far, 
+                        cam_proj.near);
 
-                    // // let projection = camera.projection_matrix() * global_trans.compute_matrix().inverse();
+                    // let projection = camera.projection_matrix() * global_trans.compute_matrix().inverse();
                     // let mut position_on_screen = projection.project_point3(position_3d);
                     // let localMapPoint = (map_trans.compute_matrix().inverse() * projection.inverse()) * Vec4::new(position_on_screen.x, position_on_screen.y, 0.8, 1.0);
                     // let mesh_size = Vec2::new(marker.width as f32, marker.height as f32);
@@ -166,7 +166,7 @@ fn prepare_light_material(
                         value: light_source.color,
                     };
                     lighting_uniform_data.positions[i] = WrappedVec2 {
-                        value: light_ndc
+                        value: local_space_point
                     };
                     lighting_uniform_data.intensities[i] = WrappedF32 {
                         value: light_source.intensity,
