@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_mod_picking::PickableBundle;
 use bevy_mod_raycast::RaycastMesh;
 use bevy_prototype_lyon::prelude::*;
 use bevy_pancam::*;
@@ -31,6 +32,7 @@ fn handle_wall_building(mut actions: ResMut<Actions>, mut commands: Commands, mu
         });
         if(actions.left_click) {
             commands.entity(entity).remove::<PreliminaryWall>();
+            commands.entity(entity).insert(Deleteable);
             actions.revert_to_previous_tool();
             pancam.enabled = true;
         }
@@ -51,7 +53,7 @@ fn handle_wall_building(mut actions: ResMut<Actions>, mut commands: Commands, mu
             Fill::color(Color::BLACK),
             Stroke::new(Color::BLACK, 1.0),
             PreliminaryWall,
-            RaycastMesh::<RaycastSet>::default()
+            PickableBundle::default(), 
         )).id();
 
         info!("Created entity {:?}", entity);

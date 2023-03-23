@@ -1,15 +1,41 @@
 use crate::{components::{Deleteable, RaycastSet}, GameState, actions::{Actions, Tool}};
 use bevy::{prelude::*, transform::{self, commands}, sprite::Mesh2dHandle};
+use bevy_mod_picking::{DefaultPickingPlugins, PickingEvent};
 use bevy_mod_raycast::{
     DefaultRaycastingPlugin, Intersection, RaycastMesh, RaycastMethod, RaycastSource, RaycastSystem,
 };
+use bevy_prototype_lyon::prelude::ShapeBundle;
 
 pub struct DeleteSystemPlugin;
 
 impl Plugin for DeleteSystemPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(delete_system.in_set(OnUpdate(GameState::Playing)))
-        .add_system(update_raycast_with_cursor.before(RaycastSystem::BuildRays::<RaycastSet>).in_base_set(CoreSet::First));
+        app.add_plugins(DefaultPickingPlugins)
+        // .add_system(print_events.run_if(current_tool_is_delete).in_base_set(CoreSet::PreUpdate));
+        .add_system(print_events.run_if(current_tool_is_delete).in_set(OnUpdate(GameState::Playing)));
+    }
+}
+
+pub fn current_tool_is_delete(actions: Res<Actions>) -> bool {
+    actions.current_tool() == Some(Tool::Delete)
+}
+
+pub fn print_events(mut events: EventReader<PickingEvent>, mut commands: Commands, deletable_q: Query<&Deleteable>) {
+    for event in events.iter() {
+        match event {
+            PickingEvent::Selection(e) => info!("A selection event happened: {:?}", e),
+            PickingEvent::Hover(e) => info!("Egads! A hover event!? {:?}", e),
+            PickingEvent::Clicked(e) => {
+                match deletable_q.get(*e) {
+                    Ok(_) => {
+                        info!("A click event happened: {:?}", e);
+                        commands.entity(*e).remove::<ShapeBundle>();
+                        commands.entity(*e).despawn();
+                    },
+                    Err(_) => info!("Not a deletable entity"),
+                }
+            }
+        }
     }
 }
 

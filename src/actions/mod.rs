@@ -4,6 +4,7 @@ use bevy::window::PrimaryWindow;
 
 use crate::actions::game_control::{get_movement, GameControl};
 use crate::GameState;
+use crate::camera::MainCamera;
 
 pub use self::tools::Tool;
 
@@ -56,6 +57,9 @@ impl Actions {
 
     pub fn update_tool(&mut self, tool: Tool) {
         self.previous_tool = self.current_tool;
+        if(self.previous_tool == Some(Tool::Delete)){
+            self.previous_tool = Some(Tool::Select);
+        }
         self.current_tool = Some(tool);
     }
 
@@ -64,7 +68,7 @@ impl Actions {
     }
 }
 
-pub fn set_cursor_position(mut actions: ResMut<Actions>, window_q: Query<&Window, With<PrimaryWindow>>, camera_q: Query<(&Camera, &GlobalTransform)>) {
+pub fn set_cursor_position(mut actions: ResMut<Actions>, window_q: Query<&Window, With<PrimaryWindow>>, camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>) {
     let (camera, camera_transform) = camera_q.single();
 
     let primary_window = window_q.single();

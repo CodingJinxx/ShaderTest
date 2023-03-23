@@ -17,7 +17,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Bevy game".to_string(), // ToDo
-                resolution: (800., 600.).into(),
+                resolution: (1200., 800.).into(),
                 canvas: Some("#bevy".to_owned()),
                 ..default()
             }),

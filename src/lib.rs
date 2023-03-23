@@ -10,6 +10,7 @@ mod ui;
 mod wall;
 mod components;
 mod delete_system;
+mod lightplacing_system;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
@@ -18,16 +19,17 @@ use crate::menu::MenuPlugin;
 use crate::wall::WallBuildingPlugin;
 
 use crate::map::MapPlugin;
-use crate::camera::CameraPlugin;
 use crate::ui::UiPlugin;
-use crate::lighting::LightingPlugin;
 
 use bevy::app::App;
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::ShapePlugin;
+use camera::CameraPlugin;
 use delete_system::DeleteSystemPlugin;
+use lighting::LightingPostprocessPlugin;
+use lightplacing_system::LightPlaceSystem;
 
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
@@ -48,8 +50,9 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
-            .add_plugin(LightingPlugin)
+            .add_plugin(LightingPostprocessPlugin)
             .add_plugin(DeleteSystemPlugin)
+            .add_plugin(LightPlaceSystem)
             .add_plugin(UiPlugin)
             .add_plugin(ShapePlugin)
             .add_plugin(LoadingPlugin)
