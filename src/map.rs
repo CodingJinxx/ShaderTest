@@ -1,7 +1,21 @@
-use bevy::{prelude::*, render::{render_resource::Extent3d, view::RenderLayers}, sprite::MaterialMesh2dBundle};
+use bevy::{
+    prelude::*,
+    render::{render_resource::Extent3d, view::RenderLayers},
+    sprite::MaterialMesh2dBundle,
+};
 use bevy_prototype_lyon::prelude::ShapePlugin;
 
-use crate::{loading::TextureAssets, GameState, lighting::{WrappedVec4, WrappedVec2, WrappedF32, WrappedBool, LightingMaterial}};
+use crate::{
+    lighting::{LightingMaterial, WrappedBool, WrappedF32, WrappedVec2, WrappedVec4},
+    loading::TextureAssets,
+    GameState,
+};
+
+#[derive(Component, Default, Clone, Copy, Debug)]
+pub struct MapMarker {
+    pub width: u32,
+    pub height: u32,
+}
 
 pub struct MapPlugin;
 
@@ -18,7 +32,6 @@ fn setup_map(
     assets: Res<Assets<Image>>,
     mut post_processing_materials: ResMut<Assets<LightingMaterial>>,
 ) {
-
     let img_handle = textures.dungeon_map.clone();
     commands.spawn(SpriteBundle {
         texture: img_handle.clone(),
@@ -28,8 +41,8 @@ fn setup_map(
 
     let image = assets.get(&img_handle).unwrap();
 
-    let width = image.texture_descriptor.size.width as f32;
-    let height = image.texture_descriptor.size.height as f32;
+    let width = image.texture_descriptor.size.width;
+    let height = image.texture_descriptor.size.height;
 
     let size = Extent3d {
         width: width,
@@ -41,37 +54,28 @@ fn setup_map(
         size.width as f32,
         size.height as f32,
     ))));
-    let post_processing_pass_layer = RenderLayers::layer((RenderLayers::TOTAL_LAYERS - 1) as u8);
 
     let material_handle = post_processing_materials.add(LightingMaterial {
-        colors: [WrappedVec4 {
-            value: Vec4::ZERO,
-        }; 64],
-        positions: [WrappedVec2 {
-            value: Vec2::ZERO,
-        }; 64],
-        intensities: [WrappedF32 {
-            value: 0.0,
-        }; 64],
-        radiuses: [WrappedF32 {
-            value: 0.0,
-        }; 64],
-        is_active: [WrappedBool {
-            value: 0,
-        }; 64],
+        colors: [WrappedVec4 { value: Vec4::ZERO }; 64],
+        positions: [WrappedVec2 { value: Vec2::ZERO }; 64],
+        intensities: [WrappedF32 { value: 0.0 }; 64],
+        radiuses: [WrappedF32 { value: 0.0 }; 64],
+        is_active: [WrappedBool { value: 0 }; 64],
         source_image: img_handle.clone(),
     });
 
-    commands.spawn((MaterialMesh2dBundle {
-        mesh: quad_handle.into(),
-        material: material_handle,
-        transform: Transform {
-            translation: Vec3::new(0.0, 0.0, 1.5),
+    commands.spawn(
+        (MaterialMesh2dBundle {
+            mesh: quad_handle.into(),
+            material: material_handle,
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 1.0),
+                ..default()
+            },
             ..default()
-        },
-        ..default()
-    },
-    post_processing_pass_layer));
-
-    
+        }, MapMarker {
+            width,
+            height,
+        }),
+    );
 }

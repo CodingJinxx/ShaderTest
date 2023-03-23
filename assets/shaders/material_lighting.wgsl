@@ -1,6 +1,7 @@
 #import bevy_sprite::mesh2d_view_bindings
 #import bevy_pbr::utils
 
+
 @group(1) @binding(0)
 var texture: texture_2d<f32>;
 
@@ -51,41 +52,45 @@ fn sdf(p: vec2<f32>, q: vec2<f32>) -> f32 {
     return sqrt(a + b);
 }
 
+
+
 @fragment
 fn fragment(
     @builtin(position) position: vec4<f32>,
     #import bevy_sprite::mesh2d_vertex_output
 ) -> @location(0) vec4<f32> {
     // Get screen position with coordinates from 0 to 1
-    let uv = coords_to_viewport_uv(position.xy, view.viewport);
-
+    
     var color: vec4<f32> = textureSample(texture, our_sampler, uv);
 
 
-    var final_color: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+    var final_color: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.9);
     // Iterate through all the light sources
     for (var i = 0u; i < MAX_LIGHTS; i = i + 1u) {
         let light_position: vec2<f32> = light_sources.positions[i].value;
         let light_color: vec4<f32> = light_sources.colors[i].value;
         let light_intensity: f32 = light_sources.intensities[i].value;
         let light_radius: f32 = light_sources.radiuses[i].value;
-        let light_active: u32 = light_sources.is_active[i].value;
+        var light_active: u32 = light_sources.is_active[i].value;
 
-        if(light_active == 0u) {
-            continue;
+        if(light_active == 1u) {
+            let size = textureDimensions(texture);
+            // let scaled_point = light_position * view.projection
+            let projected_point = vec4<f32>(light_position.x / f32(size.x), light_position.y / f32(size.y), 0.0, 1.0);
+            let world_point = projected_point;
+            let worldToLight = uv - light_position.xy;
+
+            let lightDistance = length(worldToLight);
+            let dir = normalize(worldToLight);
+            let attenuation = (1.0 / pow(lightDistance, 2.0));
+
+             if(lightDistance < 0.1) {
+                final_color = vec4<f32>(color.rgb, 0.0);
+             }
         }
-
-        let worldToLight = light_position - position.xy;
-
-        let lightDistance = length(worldToLight);
-        let dir = normalize(worldToLight);
-
-        let radiance = light_color * (1.0 / pow(lightDistance, 2.0));
-
-        final_color += radiance * color;
     }
 
 
 
-    return vec4<f32>((final_color.rgb + (color.rgb * 0.1)), color.a);
+    return final_color;
 }

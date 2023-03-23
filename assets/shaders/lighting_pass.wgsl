@@ -59,7 +59,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         let light: LightSource = light_sources.values[i];
 
         // Calculate the distance from the light source to the fragment
-        let distance: f32 = length(screen_position - light.position);
+        let distance: f32 = length(position.xy - light.position);
 
         // Calculate the light influence based on the distance and light radius
         let influence: f32 = max(0.0, 1.0 - distance / light.radius);

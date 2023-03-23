@@ -34,7 +34,7 @@ pub fn handle_place_lights(actions: Res<actions::Actions>, mut commands: Command
                 position: Vec2::new(curs.x, curs.y),
                 color: Vec4::new(1.0, 1.0, 1.0, 1.0),
                 intensity: 2.0,
-                radius: 1000.0,
+                radius: 100.0,
                 is_active: 1
              }
             ));
