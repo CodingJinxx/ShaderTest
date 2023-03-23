@@ -73,20 +73,20 @@ fn fragment(
         let light_radius: f32 = light_sources.radiuses[i].value;
         var light_active: u32 = light_sources.is_active[i].value;
 
-        if(light_active == 1u) {
+        if(light_active != 0u) {
             let size = textureDimensions(texture);
             // let scaled_point = light_position * view.projection
             let projected_point = vec4<f32>(light_position.x / f32(size.x), light_position.y / f32(size.y), 0.0, 1.0);
             let world_point = projected_point;
-            let worldToLight = uv - light_position.xy;
+            let worldToLight = light_position.xy - world_position.xy;
 
             let lightDistance = length(worldToLight);
             let dir = normalize(worldToLight);
-            let attenuation = (1.0 / pow(lightDistance, 2.0));
+            let attenuation = 1.0 / (lightDistance * lightDistance);
 
-             if(lightDistance < 0.1) {
-                final_color = vec4<f32>(color.rgb, 0.0);
-             }
+            if(lightDistance < 100.0) {
+                   final_color = vec4<f32>(color.rgb * attenuation, 0.0);
+              }
         }
     }
 

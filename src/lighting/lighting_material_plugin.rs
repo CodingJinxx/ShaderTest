@@ -48,14 +48,15 @@ pub struct OriginalCamera;
 
 fn extract_lights(
     mut commands: Commands,
-    mut light_q: Extract<Query<(Entity, &LightSource)>>, 
+    mut light_q: Extract<Query<(Entity, &LightSource, &GlobalTransform)>>, 
     mut materials_q: Extract<Query<(Entity, &Handle<LightingMaterial>)>>,
     mut cam_info: Extract<Query<(Entity, &PanCam, &Transform, &GlobalTransform, &OrthographicProjection, &Camera)>>,
     mut map_q: Extract<Query<(Entity, &MapMarker, &GlobalTransform)>>
 ) {
-    for (entity, light_source) in &light_q {
+    for (entity, light_source, global_trans) in &light_q {
         commands.get_or_spawn(entity)
-            .insert(*light_source);
+            .insert(*light_source)
+            .insert(*global_trans);
     }
 
     for (entity, material) in &materials_q {
@@ -81,7 +82,7 @@ fn extract_lights(
 
 fn prepare_light_material(
     materials: Res<RenderMaterials2d<LightingMaterial>>,
-    mut light_sources: Query<(&LightSource)>,
+    mut light_sources: Query<(&LightSource, &GlobalTransform)>,
     mut material_q: Query<(&Handle<LightingMaterial>)>,
     mut camera_q: Query<(&OriginalCamera, &Transform, &GlobalTransform, &OrthographicProjection, &Camera)>,
     mut map_q: Query<(&MapMarker, &GlobalTransform)>,
@@ -113,60 +114,60 @@ fn prepare_light_material(
                 };
             
                 let mut i = 0;
-                for (light_source) in light_sources.iter_mut() {
-                    let position_3d = Vec3::new(light_source.position.x * cam_proj.scale, light_source.position.y * cam_proj.scale  , 0.0);
-                    let projection = Mat4::orthographic_rh(
-                        cam_proj.area.min.x, 
-                        cam_proj.area.max.x, 
-                        cam_proj.area.min.y, 
-                        cam_proj.area.max.y, 
-                        cam_proj.far, 
-                        cam_proj.near);
+                for (light_source, light_global_trans) in light_sources.iter_mut() {
+                    // let position_3d = Vec3::new(light_source.position.x * cam_proj.scale, light_source.position.y * cam_proj.scale  , 0.0);
+                    // let projection = Mat4::orthographic_rh(
+                    //     cam_proj.area.min.x, 
+                    //     cam_proj.area.max.x, 
+                    //     cam_proj.area.min.y, 
+                    //     cam_proj.area.max.y, 
+                    //     cam_proj.far, 
+                    //     cam_proj.near);
 
-                    // let projection = camera.projection_matrix() * global_trans.compute_matrix().inverse();
-                    // let mut position_on_screen = projection.project_point3(position_3d);
-                    // let localMapPoint = (map_trans.compute_matrix().inverse() * projection.inverse()) * Vec4::new(position_on_screen.x, position_on_screen.y, 0.8, 1.0);
-                    // let mesh_size = Vec2::new(marker.width as f32, marker.height as f32);
-                    // let new_pos = camera.world_to_ndc(  global_trans, Vec3::new(light_source.position.x, light_source.position.y , 0.0)).unwrap();
-                    // let local_map_space = (map_trans.compute_matrix().inverse() * projection.inverse()) * Vec4::new(new_pos.x, new_pos.y, 0.0, 1.0);
-                    // let normalized_map_space = Vec2::new(new_pos.x, new_pos.y) / mesh_size;
+                    // // let projection = camera.projection_matrix() * global_trans.compute_matrix().inverse();
+                    // // let mut position_on_screen = projection.project_point3(position_3d);
+                    // // let localMapPoint = (map_trans.compute_matrix().inverse() * projection.inverse()) * Vec4::new(position_on_screen.x, position_on_screen.y, 0.8, 1.0);
+                    // // let mesh_size = Vec2::new(marker.width as f32, marker.height as f32);
+                    // // let new_pos = camera.world_to_ndc(  global_trans, Vec3::new(light_source.position.x, light_source.position.y , 0.0)).unwrap();
+                    // // let local_map_space = (map_trans.compute_matrix().inverse() * projection.inverse()) * Vec4::new(new_pos.x, new_pos.y, 0.0, 1.0);
+                    // // let normalized_map_space = Vec2::new(new_pos.x, new_pos.y) / mesh_size;
                     
-                    // // info!("light source position: {:?}", light_source.position);
-                    // // info!("mesh size: {:?}", mesh_size);
-                    // // info!("Light position: {:?}", new_pos);
+                    // // // info!("light source position: {:?}", light_source.position);
+                    // // // info!("mesh size: {:?}", mesh_size);
+                    // // // info!("Light position: {:?}", new_pos);
 
-                    // // info!("Light position 2: {:?}", position_on_screen);
-                    // // info!("Light position 3: {:?}", normalized_map_space);
+                    // // // info!("Light position 2: {:?}", position_on_screen);
+                    // // // info!("Light position 3: {:?}", normalized_map_space);
 
-                    // let ndc_2d_pos = new_pos.truncate();
-                    // let ndc_undone_cam = camera.projection_matrix().inverse() * Vec4::new(ndc_2d_pos.x, ndc_2d_pos.y, 0.0, 1.0);
-                    // let ndc_undone_cam_point = Vec2::new(ndc_undone_cam.x, ndc_undone_cam.y) / ndc_undone_cam.w;
-                    // let ndc_mesh_undone = map_trans.compute_matrix().inverse() * Vec4::new(ndc_undone_cam_point.x, ndc_undone_cam_point.y, 0.0, 1.0);
-                    // let ndc_mesh_undone_point = Vec2::new(ndc_mesh_undone.x, ndc_mesh_undone.y) / ndc_mesh_undone.w;
-                    // let normalized_local_point = (ndc_mesh_undone_point + mesh_size / 2.0) / mesh_size;
+                    // // let ndc_2d_pos = new_pos.truncate();
+                    // // let ndc_undone_cam = camera.projection_matrix().inverse() * Vec4::new(ndc_2d_pos.x, ndc_2d_pos.y, 0.0, 1.0);
+                    // // let ndc_undone_cam_point = Vec2::new(ndc_undone_cam.x, ndc_undone_cam.y) / ndc_undone_cam.w;
+                    // // let ndc_mesh_undone = map_trans.compute_matrix().inverse() * Vec4::new(ndc_undone_cam_point.x, ndc_undone_cam_point.y, 0.0, 1.0);
+                    // // let ndc_mesh_undone_point = Vec2::new(ndc_mesh_undone.x, ndc_mesh_undone.y) / ndc_mesh_undone.w;
+                    // // let normalized_local_point = (ndc_mesh_undone_point + mesh_size / 2.0) / mesh_size;
 
-                    // info!("Light position 3: {:?}", normalized_local_point);
+                    // // info!("Light position 3: {:?}", normalized_local_point);
 
-                    let light_ndc = camera.world_to_ndc(  global_trans, Vec3::new(light_source.position.x, light_source.position.y , 0.0)).unwrap().truncate();
-                    let light_clip_space = Vec4::new(light_ndc.x, light_ndc.y, 0.0, 1.0);
-                    let undo_camera_projection_matrix = camera.projection_matrix().inverse();
-                    let undo_camera_projection = undo_camera_projection_matrix * light_clip_space;
-                    let undo_map_model_matrix = map_trans.compute_matrix().inverse();
-                    let undo_map_model = undo_map_model_matrix * undo_camera_projection;
-                    let undo_map_model_point = Vec2::new(undo_map_model.x, undo_map_model.y) / undo_map_model.w;
-                    let local_space_point = undo_map_model_point / Vec2::new(marker.width as f32, marker.height as f32);
+                    // let light_ndc = camera.world_to_ndc(  global_trans, Vec3::new(light_source.position.x, light_source.position.y , 0.0)).unwrap().truncate();
+                    // let light_clip_space = Vec4::new(light_ndc.x, light_ndc.y, 0.0, 1.0);
+                    // let undo_camera_projection_matrix = camera.projection_matrix().inverse();
+                    // let undo_camera_projection = undo_camera_projection_matrix * light_clip_space;
+                    // let undo_map_model_matrix = map_trans.compute_matrix().inverse();
+                    // let undo_map_model = undo_map_model_matrix * undo_camera_projection;
+                    // let undo_map_model_point = Vec2::new(undo_map_model.x, undo_map_model.y) / undo_map_model.w;
+                    // let local_space_point = undo_map_model_point / Vec2::new(marker.width as f32, marker.height as f32);
 
-                    info!("NDC: {:?}", light_ndc);
-                    info!("Undone Camera Projection: {:?}", undo_camera_projection);
-                    info!("Undone Map Projection: {:?}", undo_map_model);
-                    info!("Undone Map Projection Point: {:?}", undo_map_model_point);
-                    info!("Local Space Point: {:?}", local_space_point);
+                    // info!("NDC: {:?}", light_ndc);
+                    // info!("Undone Camera Projection: {:?}", undo_camera_projection);
+                    // info!("Undone Map Projection: {:?}", undo_map_model);
+                    // info!("Undone Map Projection Point: {:?}", undo_map_model_point);
+                    // info!("Local Space Point: {:?}", local_space_point);
 
                     lighting_uniform_data.colors[i] = WrappedVec4 {
                         value: light_source.color,
                     };
                     lighting_uniform_data.positions[i] = WrappedVec2 {
-                        value: local_space_point
+                        value: light_global_trans.translation().truncate()
                     };
                     lighting_uniform_data.intensities[i] = WrappedF32 {
                         value: light_source.intensity,

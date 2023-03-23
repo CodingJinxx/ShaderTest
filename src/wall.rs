@@ -47,7 +47,7 @@ fn handle_wall_building(mut actions: ResMut<Actions>, mut commands: Commands, mu
                     origin: shapes::RectangleOrigin::TopLeft,
                     ..default()
                 }),
-                transform: Transform::from_translation(Vec3::new(cursor.x, cursor.y, 0.0)),
+                transform: Transform::from_translation(Vec3::new(cursor.x, cursor.y, 1.0)),
                 ..default()
             },
             Fill::color(Color::BLACK),
