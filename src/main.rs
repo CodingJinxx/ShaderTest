@@ -8,6 +8,7 @@ use bevy::DefaultPlugins;
 use bevy_game::GamePlugin;
 use std::io::Cursor;
 use winit::window::Icon;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
     App::new()
@@ -16,12 +17,13 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Bevy game".to_string(), // ToDo
-                resolution: (800., 600.).into(),
+                resolution: (1200., 800.).into(),
                 canvas: Some("#bevy".to_owned()),
                 ..default()
             }),
             ..default()
         }))
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(GamePlugin)
         .add_system(set_window_icon.on_startup())
         .run();
