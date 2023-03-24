@@ -22,7 +22,7 @@ use bevy_pancam::PanCam;
 
 use crate::{camera::{MainCamera, setup_camera}, map::MapMarker};
 
-use super::LightSource;
+use super::{LightSource, LightOccluder};
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum CameraSet {
@@ -39,6 +39,7 @@ impl Plugin for LightingPostprocessPlugin {
 
         app.sub_app_mut(RenderApp)
             .add_system(extract_lights.in_schedule(ExtractSchedule).in_set(RenderSet::ExtractCommands))
+            .add_system(extract_occluders.in_schedule(ExtractSchedule).in_set(RenderSet::ExtractCommands))
             .add_system(prepare_light_material.in_set(RenderSet::Prepare));
     }
 }
@@ -51,7 +52,6 @@ fn extract_lights(
     mut light_q: Extract<Query<(Entity, &LightSource, &GlobalTransform)>>, 
     mut materials_q: Extract<Query<(Entity, &Handle<LightingMaterial>)>>,
     mut cam_info: Extract<Query<(Entity, &PanCam, &Transform, &GlobalTransform, &OrthographicProjection, &Camera)>>,
-    mut map_q: Extract<Query<(Entity, &MapMarker, &GlobalTransform)>>
 ) {
     for (entity, light_source, global_trans) in &light_q {
         commands.get_or_spawn(entity)
@@ -72,11 +72,16 @@ fn extract_lights(
             .insert(*global_trans)
             .insert(camera.clone());
     }
+}
 
-    for (entity, map_marker, global) in &map_q {
+fn extract_occluders(
+    mut commands: Commands,
+    mut occluder_q: Extract<Query<(Entity, &LightOccluder, &GlobalTransform)>>,
+) {
+    for (entity, occl, trans) in &occluder_q {
         commands.get_or_spawn(entity)
-            .insert(*map_marker)
-            .insert(*global);
+            .insert(*occl)
+            .insert(*trans);
     }
 }
 
@@ -85,11 +90,9 @@ fn prepare_light_material(
     mut light_sources: Query<(&LightSource, &GlobalTransform)>,
     mut material_q: Query<(&Handle<LightingMaterial>)>,
     mut camera_q: Query<(&OriginalCamera, &Transform, &GlobalTransform, &OrthographicProjection, &Camera)>,
-    mut map_q: Query<(&MapMarker, &GlobalTransform)>,
+    mut occluder_q: Query<(&LightOccluder, &GlobalTransform)>,
     render_queue: Res<RenderQueue>,
 ) {
-    if let Ok(map) = map_q.get_single() {
-        let (marker, map_trans) = map;
     if let Ok(cam) = camera_q.get_single_mut() {
         let (p , cam_trans, global_trans, cam_proj, camera) = cam;
 
@@ -115,54 +118,6 @@ fn prepare_light_material(
             
                 let mut i = 0;
                 for (light_source, light_global_trans) in light_sources.iter_mut() {
-                    // let position_3d = Vec3::new(light_source.position.x * cam_proj.scale, light_source.position.y * cam_proj.scale  , 0.0);
-                    // let projection = Mat4::orthographic_rh(
-                    //     cam_proj.area.min.x, 
-                    //     cam_proj.area.max.x, 
-                    //     cam_proj.area.min.y, 
-                    //     cam_proj.area.max.y, 
-                    //     cam_proj.far, 
-                    //     cam_proj.near);
-
-                    // // let projection = camera.projection_matrix() * global_trans.compute_matrix().inverse();
-                    // // let mut position_on_screen = projection.project_point3(position_3d);
-                    // // let localMapPoint = (map_trans.compute_matrix().inverse() * projection.inverse()) * Vec4::new(position_on_screen.x, position_on_screen.y, 0.8, 1.0);
-                    // // let mesh_size = Vec2::new(marker.width as f32, marker.height as f32);
-                    // // let new_pos = camera.world_to_ndc(  global_trans, Vec3::new(light_source.position.x, light_source.position.y , 0.0)).unwrap();
-                    // // let local_map_space = (map_trans.compute_matrix().inverse() * projection.inverse()) * Vec4::new(new_pos.x, new_pos.y, 0.0, 1.0);
-                    // // let normalized_map_space = Vec2::new(new_pos.x, new_pos.y) / mesh_size;
-                    
-                    // // // info!("light source position: {:?}", light_source.position);
-                    // // // info!("mesh size: {:?}", mesh_size);
-                    // // // info!("Light position: {:?}", new_pos);
-
-                    // // // info!("Light position 2: {:?}", position_on_screen);
-                    // // // info!("Light position 3: {:?}", normalized_map_space);
-
-                    // // let ndc_2d_pos = new_pos.truncate();
-                    // // let ndc_undone_cam = camera.projection_matrix().inverse() * Vec4::new(ndc_2d_pos.x, ndc_2d_pos.y, 0.0, 1.0);
-                    // // let ndc_undone_cam_point = Vec2::new(ndc_undone_cam.x, ndc_undone_cam.y) / ndc_undone_cam.w;
-                    // // let ndc_mesh_undone = map_trans.compute_matrix().inverse() * Vec4::new(ndc_undone_cam_point.x, ndc_undone_cam_point.y, 0.0, 1.0);
-                    // // let ndc_mesh_undone_point = Vec2::new(ndc_mesh_undone.x, ndc_mesh_undone.y) / ndc_mesh_undone.w;
-                    // // let normalized_local_point = (ndc_mesh_undone_point + mesh_size / 2.0) / mesh_size;
-
-                    // // info!("Light position 3: {:?}", normalized_local_point);
-
-                    // let light_ndc = camera.world_to_ndc(  global_trans, Vec3::new(light_source.position.x, light_source.position.y , 0.0)).unwrap().truncate();
-                    // let light_clip_space = Vec4::new(light_ndc.x, light_ndc.y, 0.0, 1.0);
-                    // let undo_camera_projection_matrix = camera.projection_matrix().inverse();
-                    // let undo_camera_projection = undo_camera_projection_matrix * light_clip_space;
-                    // let undo_map_model_matrix = map_trans.compute_matrix().inverse();
-                    // let undo_map_model = undo_map_model_matrix * undo_camera_projection;
-                    // let undo_map_model_point = Vec2::new(undo_map_model.x, undo_map_model.y) / undo_map_model.w;
-                    // let local_space_point = undo_map_model_point / Vec2::new(marker.width as f32, marker.height as f32);
-
-                    // info!("NDC: {:?}", light_ndc);
-                    // info!("Undone Camera Projection: {:?}", undo_camera_projection);
-                    // info!("Undone Map Projection: {:?}", undo_map_model);
-                    // info!("Undone Map Projection Point: {:?}", undo_map_model_point);
-                    // info!("Local Space Point: {:?}", local_space_point);
-
                     lighting_uniform_data.colors[i] = WrappedVec4 {
                         value: light_source.color,
                     };
@@ -181,10 +136,42 @@ fn prepare_light_material(
                     
                     i += 1;
                 }
-                for binding in (&light_material.bindings).iter() {
+                if let Some(binding) = light_material.bindings.get(2) {
                     if let OwnedBindingResource::Buffer(cur_buffer) = binding {
                         let mut buffer = encase::UniformBuffer::new(Vec::new());
                         buffer.write(&lighting_uniform_data).unwrap();
+                        render_queue.write_buffer(cur_buffer, 0, buffer.as_ref());
+                    }
+                }
+
+                let mut occluder_uniform_data = OccluderMaterialUniformData {
+                    exists: [WrappedBool {
+                        value: 0,
+                    }; 64],
+                    occluders: [WrappedVec4 {
+                        value: Vec4::ZERO,
+                    }; 64],
+                };
+
+
+                let mut i = 0;
+                for (occluder, trans) in occluder_q.iter_mut() {
+                    let p1 = trans.translation().truncate();
+                    let rect: Vec4 = Vec4::new(p1.x, p1.x + occluder.width, p1.y , p1.y - occluder.height);
+                    occluder_uniform_data.exists[i] = WrappedBool {
+                        value: 1,
+                    };
+                    occluder_uniform_data.occluders[i] = WrappedVec4 {
+                        value: rect
+                    };
+                    
+                    i += 1;
+                }
+
+                if let Some(binding) = light_material.bindings.get(3) {
+                    if let OwnedBindingResource::Buffer(cur_buffer) = binding {
+                        let mut buffer = encase::UniformBuffer::new(Vec::new());
+                        buffer.write(&occluder_uniform_data).unwrap();
                         render_queue.write_buffer(cur_buffer, 0, buffer.as_ref());
                     }
                 }
@@ -192,7 +179,6 @@ fn prepare_light_material(
         }
        
     }
-}
 }
 
 fn setup(
@@ -337,6 +323,11 @@ pub struct LightingMaterial {
     pub radiuses: [WrappedF32; 64],
     #[uniform(2)]
     pub is_active: [WrappedBool; 64],
+    #[uniform(3)]
+    pub occluders: [WrappedVec4; 64],
+    #[uniform(3)]
+    pub exists: [WrappedBool; 64]
+
 }
 
 impl Material2d for LightingMaterial {
@@ -376,4 +367,10 @@ pub struct LightingMaterialUniformData {
     pub intensities: [WrappedF32; 64],
     pub radius: [WrappedF32; 64],
     pub is_active: [WrappedBool; 64]
+}
+
+#[derive(Clone, ShaderType)]
+pub struct OccluderMaterialUniformData {
+    pub occluders: [WrappedVec4; 64],
+    pub exists: [WrappedBool; 64]
 }

@@ -61,6 +61,8 @@ fn setup_map(
         intensities: [WrappedF32 { value: 0.0 }; 64],
         radiuses: [WrappedF32 { value: 0.0 }; 64],
         is_active: [WrappedBool { value: 0 }; 64],
+        occluders: [WrappedVec4 { value: Vec4::ZERO }; 64],
+        exists: [WrappedBool { value: 0 }; 64],
         source_image: img_handle.clone(),
     });
 
