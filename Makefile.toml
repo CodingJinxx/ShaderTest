@@ -1,0 +1,51 @@
+﻿[tasks.wasm-install]
+command = "rustup"
+args = ["target", "install", "wasm32-unknown-unknown"]
+
+[tasks.build-wasm-debug]
+command = "cargo"
+args = ["build", "--target", "wasm32-unknown-unknown"]
+
+[tasks.build-wasm-release]
+command = "cargo"
+args = ["build", "--target", "wasm32-unknown-unknown", "--release"]
+
+[tasks.wasm-bindgen-debug]
+command = "wasm-bindgen"
+args = ["--out-dir", "../wwwroot", "--target", "web", "./target/wasm32-unknown-unknown/debug/map_game.wasm"]
+
+[tasks.wasm-bindgen-release]
+command = "wasm-bindgen"
+args = ["--out-dir", "../wwwroot", "--target", "web", "./target/wasm32-unknown-unknown/release/map_game.wasm"]
+
+[tasks.copy-assets]
+command = "xcopy"
+args = [".\\assets\\*", "..\\wwwroot\\assets\\", "/s", "/Y"]
+    
+
+[tasks.fix_wsgl_ext]
+script = [ 
+    ".\\rename_shaders.bat"
+]
+
+[tasks.debug]
+dependencies = [
+    "build-wasm-debug",
+    "wasm-bindgen-debug",
+    "copy-assets",
+    "fix_wsgl_ext"
+]
+
+[tasks.release]
+dependencies = [
+    "build-wasm-release",
+    "wasm-bindgen-release",
+    "copy-assets",
+    "fix_wsgl_ext"
+]
+
+[tasks.install]
+dependencies = [
+    "wasm-install",
+    "build",
+]

@@ -155,7 +155,7 @@ fn fragment(
                 }
             }
 
-            if(!is_light_occluded) {
+            if(!is_light_occluded && lightDistance < light_radius) {
                    final_color = vec4<f32>(color.rgb * attenuation, 0.0);
               }
         }

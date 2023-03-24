@@ -8,7 +8,7 @@ use bevy_prototype_lyon::prelude::ShapePlugin;
 use crate::{
     lighting::{LightingMaterial, WrappedBool, WrappedF32, WrappedVec2, WrappedVec4},
     loading::TextureAssets,
-    GameState,
+    GameState, events::MapSwitchEvent, shared_state::SharedState,
 };
 
 #[derive(Component, Default, Clone, Copy, Debug)]
@@ -21,7 +21,8 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_map.in_schedule(OnEnter(GameState::Playing)));
+        app.add_system(setup_map.in_schedule(OnEnter(GameState::Playing)))
+        .add_system(display_map_on_switch.in_set(OnUpdate(GameState::Playing)));
     }
 }
 
@@ -80,4 +81,19 @@ fn setup_map(
             height,
         }),
     );
+}
+
+fn display_map_on_switch(mut events: EventReader<MapSwitchEvent>, mut map_query: Query<(&MapMarker, &mut Handle<Image>)>, shared_state: Res<SharedState>, asset_server: Res<AssetServer>) {
+    if !events.is_empty() {
+        // Event was fired update map
+
+        // Delete all existing
+
+        // // Display Map
+        let (_, mut map_texture) = map_query.get_single_mut().expect("Couldnt find map");
+
+        *map_texture = asset_server.load(shared_state.current_map.as_ref().unwrap().url.as_str());
+        
+        events.clear();
+    }
 }

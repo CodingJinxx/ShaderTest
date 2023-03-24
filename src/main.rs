@@ -9,11 +9,16 @@ use bevy_game::GamePlugin;
 use std::io::Cursor;
 use winit::window::Icon;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_game::CustomWebAssetPlugin;
+
 
 fn main() {
+    let deployment = "_content/CriticalTableTop.MapService.Game/assets";
+    let local_dev_rust = "assets";
     App::new()
         .insert_resource(Msaa::Off)
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
+        .add_plugin(CustomWebAssetPlugin::new(local_dev_rust))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Bevy game".to_string(), // ToDo
@@ -22,7 +27,7 @@ fn main() {
                 ..default()
             }),
             ..default()
-        }))
+        }).build().disable::<AssetPlugin>())
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(GamePlugin)
         .add_system(set_window_icon.on_startup())

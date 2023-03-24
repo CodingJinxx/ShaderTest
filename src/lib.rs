@@ -11,12 +11,18 @@ mod wall;
 mod components;
 mod delete_system;
 mod lightplacing_system;
+mod communication;
+mod bevy_webasset_plugin_mod;
+mod events;
+mod model;
+mod shared_state;
 
 use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
 use crate::loading::LoadingPlugin;
 use crate::menu::MenuPlugin;
 use crate::wall::WallBuildingPlugin;
+pub use crate::bevy_webasset_plugin_mod::custom_webasset_plugin::CustomWebAssetPlugin;
 
 use crate::map::MapPlugin;
 use crate::ui::UiPlugin;
@@ -27,7 +33,9 @@ use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::ShapePlugin;
 use camera::CameraPlugin;
+use communication::plugin::InteropCommunicationPlugin;
 use delete_system::DeleteSystemPlugin;
+use events::EventPlugin;
 use lighting::LightingPostprocessPlugin;
 use lightplacing_system::LightPlaceSystem;
 
@@ -61,7 +69,9 @@ impl Plugin for GamePlugin {
             .add_plugin(CameraPlugin)
             .add_plugin(MenuPlugin)
             .add_plugin(ActionsPlugin)
-            .add_plugin(InternalAudioPlugin);
+            .add_plugin(InternalAudioPlugin)
+            .add_plugin(InteropCommunicationPlugin)
+            .add_plugin(EventPlugin);
             // .add_plugin(PlayerPlugin);
 
         // #[cfg(debug_assertions)]
